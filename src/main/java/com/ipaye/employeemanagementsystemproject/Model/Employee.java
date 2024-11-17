@@ -31,5 +31,26 @@ public class Employee {
         return role;
     }
 
+    private PerformanceReview performanceReview;
 
+    public void setPerformanceReview(PerformanceReview performanceReview){
+        this.performanceReview = performanceReview;
+    }
+
+    public PerformanceReview getPerformanceReview(){
+        return performanceReview;
+    }
+
+    private int salary;
+
+    public Employee(int salary){
+        this.salary = salary;
+    }
+    public int getSalary() {
+        return salary;
+    }
+
+    public void setSalary(int salary){
+        this.salary = salary;
+    }
 }

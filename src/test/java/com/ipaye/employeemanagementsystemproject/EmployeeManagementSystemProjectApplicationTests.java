@@ -2,6 +2,7 @@ package com.ipaye.employeemanagementsystemproject;
 
 import com.ipaye.employeemanagementsystemproject.Model.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
@@ -80,8 +81,87 @@ class EmployeeManagementSystemProjectApplicationTests {
 
         assertEquals(role, employee.getRole());
 
+    }
 
+    // TEST CASE 7
+    @Test
+    void UpdateEmployeePerformance(){
+        Manager manager = new Manager();
+        Employee employee = new Employee("Ipaye", "Babatunde", "Ipayebabs@gmail.com", "software engineer");
 
+        manager.addEmployeeToTeam(employee);
+
+        PerformanceReview performanceReview = new PerformanceReview("Excellent");
+        manager.updatePerformance(employee, performanceReview);
+
+        assertEquals("Excellent", employee.getPerformanceReview().getRating());
+    }
+
+    // TEST CASE 8
+    @Test
+    void updateEmployeeSalary(){
+        Manager manager = new Manager();
+        Employee employee = new Employee("Daniel", "James", "Djamesz@gamil.com", "data analyst");
+        manager.addEmployeeToTeam(employee);
+
+        manager.updateSalary(employee, 70000);
+        assertEquals(70000, employee.getSalary());
+    }
+
+    // TEST CASE 9
+    @Test
+    void CannotUpdatePerformanceOfEmployeeNotInManagersTeam(){
+        Manager manager = new Manager();
+        Employee employee = new Employee("John", "Adu", "Johnadu@gmail.com", "data analyst");
+
+        PerformanceReview performanceReview = new PerformanceReview("Average");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+            manager.updatePerformance(employee, performanceReview);
+        });
+        assertEquals("Employee not in Manager's team", exception.getMessage());
+    }
+
+    // TEST CASE 10
+    @Test
+    void CannotUpdateSalaryOfEmployeeNotInManagersTeam(){
+        Manager manager = new Manager();
+        Employee employee = new Employee("Jack", "Bauer", "JackBauer@gmail.com", "Software Engineer");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+            manager.updateSalary(employee, 70000);
+        });
+        assertEquals("Employee not in Manager's team", exception.getMessage());
+    }
+
+    // TEST CASE 11
+   @Test
+   void EnsureManagerCanOnlyUpdatePerformanceAndSalaryOfTheirTeam(){
+
+        Manager manager = new Manager();
+        Employee employee = new Employee("Smith", "Chloe", "SmithCl@gmail.com", "Data Analyst");
+        Employee otherEmployee = new Employee("Jennifer", "Houston", "JenG12@gmail.com", "Software Analyst");
+
+        manager.addEmployeeToTeam(employee);
+
+        PerformanceReview performanceReview = new PerformanceReview("Good");
+
+        manager.updatePerformance(employee, performanceReview);
+        assertEquals("Good", employee.getPerformanceReview().getRating());
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+            manager.updatePerformance(otherEmployee, performanceReview);
+        });
+
+        assertEquals("Employee not in Manager's team", exception.getMessage());
+
+        manager.updateSalary(employee, 70000);
+        assertEquals(70000, employee.getSalary(), 0.0);
+
+        exception = assertThrows(IllegalArgumentException.class, () ->{
+            manager.updateSalary(otherEmployee, 70000);
+        });
+        assertEquals("Employee not in Manager's team", exception.getMessage());
     }
 
 }
