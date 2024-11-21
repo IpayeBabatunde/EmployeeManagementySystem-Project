@@ -582,4 +582,170 @@ class EmployeeManagementSystemProjectApplicationTests {
 
     // TEST CASE 38
 
+    @Test
+    void preventAddingDuplicateDepartment(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("hr");
+
+        // Add the first department
+       admin.addDepartments(hrDepartment);
+
+        // Try adding a duplicate department and expect an exception
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            admin.addDepartment(new Department("hr")); // Trying to add the same department again
+        });
+
+        // Check the exception message
+        assertEquals("Department already exists", exception.getMessage());
+    }
+
+
+    // TEST CASE 39
+    @Test
+    void AddNewRole(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+
+        admin.addRole(executiveRole);
+
+        assertEquals(executiveRole, admin.getRoleByTitle("Executive"));
+
+    }
+
+
+    // TEST CASE 40
+    @Test
+    void preventAddingDuplicateRole(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+
+        admin.addRole(executiveRole);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            admin.addRoles(new Role("Executive"));
+        });
+
+        assertEquals("Role already exists", exception.getMessage());
+
+    }
+
+
+    // TEST CASE 41
+    @Test
+    void UpdateDepartmentName(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("HR");
+
+        admin.addDepartments(hrDepartment);
+        admin.updateDepartment("HR");
+        assertEquals("HR", admin.getDepartmentByNames("HR").getName());
+    }
+
+    // TEST CASE 42
+    @Test
+    void updateRoleTitle(){
+        Admin admin = new Admin();
+        Role engineerRole = new Role("Engineer");
+
+        admin.addRole(engineerRole);
+        admin.updateRoleTitle("Senior Engineer");
+
+       assertEquals("Senior Engineer", admin.getRoleByTitles("Senior Engineer").getTitle());
+    }
+
+    // TEST CASE 43
+    @Test
+    void RemoveDepartment(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("HR");
+
+        admin.addDepartment(hrDepartment);
+        admin.removeDepartment(hrDepartment);
+
+        assertNull(admin.getDepartmentByNames("HR"));
+
+
+    }
+
+    // TEST CASE 44
+    @Test
+    void RemoveRole(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+
+        admin.addRole(executiveRole);
+        admin.removeRoles(executiveRole);
+
+        assertNull(admin.getRoleByTitle("Executive"));
+    }
+
+
+    //TEST CASE 45
+    @Test
+    void PreventRemovingNonExistentDepartment(){
+        Admin admin = new Admin();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            admin.removeDepartments("NonExistentDepartment");
+        });
+
+        assertEquals("Department does not exist", exception.getMessage());
+
+    }
+
+    // TEST CASE 46
+    @Test
+    void PreventRemovingNonExistingRole(){
+        Admin admin = new Admin();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            admin.removeRole("NonExistingRole");
+        });
+        assertEquals("Role does not exist", exception.getMessage());
+    }
+
+    // TEST CASE 47
+    @Test
+    void ListAllDepartment(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("HR");
+        Department dataDepartment = new Department("DATA");
+
+        admin.addDepartments(hrDepartment);
+        admin.addDepartments(dataDepartment);
+
+        List<Department> departments = admin.getAllDepartment();
+
+        assertEquals(2, departments.size());
+        assertTrue(departments.contains(hrDepartment));
+        assertTrue(departments.contains(dataDepartment));
+    }
+
+    // TEST CASE 48
+    @Test
+    void getAllRoles(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+        Role directorRole = new Role("Director");
+
+        admin.addRole(executiveRole);
+        admin.addRole(directorRole);
+
+        List<Role> roles = admin.getAllRoles();
+
+        assertEquals(2, roles.size());
+        assertTrue(roles.contains(executiveRole));
+        assertTrue(roles.contains(directorRole));
+        
+    }
+
+     // TEST CASE 49
+    @Test
+    void ManagerCanAddAPerformanceReviewForAnEmployee(){
+
+
+
+    }
+
+
 }
