@@ -1,10 +1,10 @@
 package com.ipaye.employeemanagementsystemproject;
 
 import com.ipaye.employeemanagementsystemproject.Model.*;
-import com.ipaye.employeemanagementsystemproject.service.EmployeeNotFoundException;
-import com.ipaye.employeemanagementsystemproject.service.InvalidRatingException;
-import com.ipaye.employeemanagementsystemproject.service.PerformanceMetrics;
-import com.ipaye.employeemanagementsystemproject.service.PerformanceReviewService;
+import com.ipaye.employeemanagementsystemproject.Model.Employee;
+import com.ipaye.employeemanagementsystemproject.Model.Manager;
+import com.ipaye.employeemanagementsystemproject.service.*;
+import com.ipaye.employeemanagementsystemproject.Model.Admin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -890,7 +890,62 @@ class EmployeeManagementSystemProjectApplicationTests {
 
     }
 
+    //  TEST CASE 56
+    @Test
+    void AdminCanASalaryForAnEmployee(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Admin admin = new com.ipaye.employeemanagementsystemproject.service.Admin(1, "AdminUser");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jack Bauer");
+        double salary = 7000.0;
 
+        // mock the behavior of the setting salary
+        Mockito.when(salaryManagementService.setSalary(admin.getId(), employee.getId(), salary))
+                .thenReturn("Salary set successfully");
+
+        //  execute and assert
+        String result =(String) salaryManagementService.setSalary(admin.getId(), employee.getId(), salary);
+        assertEquals("Salary set successfully", result);
+
+    }
+
+
+    // TEST CASE 57
+    @Test
+    void AdminCanUpdateEmployeeSalary(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Admin admin = new com.ipaye.employeemanagementsystemproject.service.Admin(1, "AdminUser");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jack Doe");
+        double newSalary = 80000.0;
+
+        // Mock the behavior of the updating salary
+        Mockito.when(salaryManagementService.updateSalary(admin.getId(), employee.getId(), newSalary))
+                .thenReturn("Salary updated successfully");
+
+        // Execute and assert
+        String result =(String) salaryManagementService.updateSalary(admin.getId(), employee.getId(), newSalary);
+        assertEquals("Salary updated successfully", result);
+    }
+
+    // TEST CASE 58
+    @Test
+    void RetrieveSalaryHistoryForAnEmployee(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane Austin");
+
+        //Mock salary history
+        SalaryRecord salaryRecord1 = new SalaryRecord(1, 700000, "2023-01-01");
+        SalaryRecord salaryRecord2 = new SalaryRecord(1, 900000, "2024-01-08");
+        List<SalaryRecord> salaryHistory = Arrays.asList(salaryRecord1, salaryRecord2);
+
+        // Mocking the behavior to retrieve salary history
+        Mockito.when(salaryManagementService.getSalaryHistory(employee.getId())).thenReturn(salaryHistory);
+
+        // Execute and assert
+        List<SalaryRecord> result = salaryManagementService.getSalaryHistory(employee.getId());
+        assertEquals(2, result.size());
+        assertEquals(700000, result.get(0).getSalary());
+
+    }
 
 
 
