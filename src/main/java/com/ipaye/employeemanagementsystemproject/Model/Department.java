@@ -1,5 +1,7 @@
 package com.ipaye.employeemanagementsystemproject.Model;
 
+import java.util.Collection;
+
 public class Department {
 
 //    private String name;
@@ -36,9 +38,6 @@ public class Department {
         Department department = (Department) object;
         return departmentName.equals(department.departmentName);
     }
-
-
-
 
 
 

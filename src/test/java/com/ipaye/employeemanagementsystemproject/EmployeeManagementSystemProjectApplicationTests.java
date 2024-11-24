@@ -1,8 +1,13 @@
 package com.ipaye.employeemanagementsystemproject;
 
 import com.ipaye.employeemanagementsystemproject.Model.*;
+import com.ipaye.employeemanagementsystemproject.service.EmployeeNotFoundException;
+import com.ipaye.employeemanagementsystemproject.service.InvalidRatingException;
+import com.ipaye.employeemanagementsystemproject.service.PerformanceMetrics;
+import com.ipaye.employeemanagementsystemproject.service.PerformanceReviewService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.nio.file.LinkOption;
@@ -588,11 +593,11 @@ class EmployeeManagementSystemProjectApplicationTests {
         Department hrDepartment = new Department("hr");
 
         // Add the first department
-       admin.addDepartments(hrDepartment);
+       admin.addDepartment(hrDepartment);
 
         // Try adding a duplicate department and expect an exception
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            admin.addDepartment(new Department("hr")); // Trying to add the same department again
+            admin.addDepartment(hrDepartment); // Trying to add the same department again
         });
 
         // Check the exception message
@@ -650,7 +655,7 @@ class EmployeeManagementSystemProjectApplicationTests {
         admin.addRole(engineerRole);
         admin.updateRoleTitle("Senior Engineer");
 
-       assertEquals("Senior Engineer", admin.getRoleByTitles("Senior Engineer").getTitle());
+       assertEquals("Senior Engineer", admin.getRoleByTitle("Senior Engineer").getTitle());
     }
 
     // TEST CASE 43
@@ -662,7 +667,7 @@ class EmployeeManagementSystemProjectApplicationTests {
         admin.addDepartment(hrDepartment);
         admin.removeDepartment(hrDepartment);
 
-        assertNull(admin.getDepartmentByNames("HR"));
+        assertNull(admin.getDepartmentByName("HR"));
 
 
     }
@@ -742,11 +747,151 @@ class EmployeeManagementSystemProjectApplicationTests {
      // TEST CASE 49
     @Test
     void ManagerCanAddAPerformanceReviewForAnEmployee(){
+        PerformanceReviewService reviewService =Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John Doe");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane Smith");
+        PerformanceReview review = new PerformanceReview(employee.getId(), manager.getId(), 4, 5, 3);
+
+        //Mocking the behavior of the service method
+        Mockito.when(reviewService.addPerformanceReview(manager.getId(), employee.getId(), review)).thenReturn("Performance review added successfully");
 
 
+        //Invoking the method and asserting the result
+        String result =(String) reviewService.addPerformanceReview(manager.getId(), employee.getId(), review);
+        assertEquals("Performance review added successfully", result);
 
 
     }
+
+    // TEST CASE 50
+    @Test
+    void ManagerCannotAddAReviewForAnInvalidEmployee(){
+        PerformanceReviewService reviewService = Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John Doe");
+        int invalidEmployeeId = 999;
+        PerformanceReview review = new PerformanceReview(invalidEmployeeId, manager.getId(), 4, 5,3);
+
+        // Mocking the behavior when employee is not found
+        Mockito.when(reviewService.addPerformanceReview(manager.getId(), invalidEmployeeId, review))
+                .thenThrow(new EmployeeNotFoundException("Employee not found"));
+
+        // Exception testing
+        Exception exception = assertThrows(EmployeeNotFoundException.class, ()->{
+            reviewService.addPerformanceReview(manager.getId(), invalidEmployeeId, review);
+        });
+
+        assertEquals("Employee not found", exception.getMessage());
+    }
+
+
+    //  TEST CASE 51
+    @Test
+    void ManagerCannotSubmitAReviewWithInvalidMetricRating(){
+        PerformanceReviewService reviewService = Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John doe");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane smith");
+        PerformanceReview invalidReview = new PerformanceReview(employee.getId(), manager.getId(), 6, -1, 4);
+        //Mocking the behavior when invalid rating are provided
+        Mockito.when(reviewService.addPerformanceReview(manager.getId(), employee.getId(), invalidReview))
+                .thenThrow(new InvalidRatingException("Invalid Rating for performance metrics"));
+
+        // Exception testing
+        Exception exception = assertThrows(InvalidRatingException.class, () ->{
+            reviewService.addPerformanceReview(manager.getId(), employee.getId(), invalidReview);
+        });
+
+        assertEquals("Invalid Rating for performance metrics", exception.getMessage());
+    }
+
+    // TEST CASE 52
+    @Test
+    void RetrievePerformanceForAnEmployee(){
+        PerformanceReviewService reviewService =Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane smith");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John Doe");
+
+        // Sample reviews for the employee
+        PerformanceReview review1 = new PerformanceReview(employee.getId(), manager.getId(), 5, 4, 5);
+        PerformanceReview review2 = new PerformanceReview(employee.getId(), manager.getId(), 4, 5, 5);
+
+        List<PerformanceReview> reviews = Arrays.asList(review1, review2);
+
+        //Mocking the retrieval of reviews
+        Mockito.when(reviewService.getPerformanceReviews(employee.getId())).thenReturn(reviews);
+
+        // verifying that the reviews are returned correctly
+        List<PerformanceReview> result = reviewService.getPerformanceReviews(employee.getId());
+        assertEquals(2, result.size());
+        assertEquals(0, result.get(0).getCommunication());
+
+    }
+
+
+    // TEST CASE 53
+    @Test
+    void InvalidMetricScoreTest(){
+        com.ipaye.employeemanagementsystemproject.service.Employee  employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "John Doe");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "Jane smith");
+
+        List<PerformanceMetrics> metrics = List.of(
+                new PerformanceMetrics("Communication", 6),
+                new PerformanceMetrics("Technical Expertise", 5),
+                new PerformanceMetrics("Team work", 3)
+        );
+
+            PerformanceReview review = new PerformanceReview(employee, manager, metrics, "Excellent Technical skills");
+
+            Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+                review.addPerformanceReview(review);
+            });
+
+            assertEquals("Performance Score Must be btwn 1 and 5 for metric comm", exception.getMessage());
+    }
+
+    // TEST CASE 54
+    @Test
+    void missingMetricTest(){
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "John doe");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "jane smith");
+
+        List<PerformanceMetrics> metrics = List.of(new PerformanceMetrics("Communication", 4));
+
+        PerformanceReview review = new PerformanceReview(employee, manager, metrics, "Needs improvement in some areas");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+            review.addPerformanceReview(review);
+        });
+
+        assertEquals("All Performance metrics must be provided", exception.getMessage());
+    }
+
+
+
+    // TEST CASE 55
+    @Test
+    void EmptyReviewCommentTest(){
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "John Doe");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "Jack Bauer");
+
+        List<PerformanceMetrics> metrics = List.of(
+                new PerformanceMetrics("Communication", 4),
+                new PerformanceMetrics("Technical Expertise", 5),
+                new PerformanceMetrics("Teamwork", 3)
+
+        );
+
+        PerformanceReview review = new PerformanceReview(employee, manager, metrics, "");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            review.addPerformanceReview(review);
+        });
+
+        assertEquals("Review comments cannot be empty", exception.getMessage());
+
+    }
+
+
+
 
 
 }
