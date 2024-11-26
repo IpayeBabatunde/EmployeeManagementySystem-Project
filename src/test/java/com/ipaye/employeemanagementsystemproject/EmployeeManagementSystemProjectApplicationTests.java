@@ -947,6 +947,31 @@ class EmployeeManagementSystemProjectApplicationTests {
 
     }
 
+    // TEST CASE 59
+    @Test
+    void GenerateEmployeePerformanceReport(){
 
+        ReportingService reportingService = Mockito.mock(ReportingService.class);
+
+        //Mock report data
+        PerformanceReport performanceReport = new PerformanceReport(4.2, 3.7, 4.7);
+
+        //mock the behavior for generating the report
+        Mockito.when(reportingService.generateEmployeePerformanceReport()).thenReturn(performanceReport);
+
+
+        // Execute the method and assert the result
+        PerformanceReport result =(PerformanceReport) reportingService.generateEmployeePerformanceReport();
+        assertNotNull(result);
+        assertEquals(4.2, result.getAverageCommunication());
+        assertEquals(3.7, result.getAverageTeamwork());
+        assertEquals(4.7, result.getAverageProblemSolving());
+
+    }
+
+    // TEST CASE 60
+
+
+    
 
 }
