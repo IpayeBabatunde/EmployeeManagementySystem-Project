@@ -3,6 +3,7 @@ package com.ipaye.employeemanagementsystemproject.Model;
 public class Department {
 
     String departmentName;
+    private Department department;
 
     public Department(String departmentName){
         this.departmentName = departmentName;
@@ -15,4 +16,6 @@ public class Department {
         Department department = (Department) object;
         return departmentName.equals(department.departmentName);
     }
+
+
 }

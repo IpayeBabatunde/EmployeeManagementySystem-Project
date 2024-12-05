@@ -39,7 +39,37 @@ public class Admin {
         return new ArrayList<>(reports);
     }
 
+//    public void assignRole(Employee employee, String role) {
+//            employee.setRole(role);
+//    }
+
     public void assignRole(Employee employee, Role role) {
-            employee.setRole(role);
+        employee.setRole(role);
+    }
+
+    public void addEmployee(Employee employee) {
+
+        employees.add(employee);
+    }
+
+    public void assignRole(String email, Role role) {
+        if (email == null || email.isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty.");
+        }
+
+        for (Employee employee : employees) {
+            if (employee.getEmail().equalsIgnoreCase(email)) {
+                employee.setRole(role); // Make sure this is implemented in the Employee class
+                return;
+            }
+        }
+
+        throw new IllegalArgumentException("Employee with email " + email + " not found.");
+    }
+
+    public void assignRoles(Employee employee, Role role) {
+        employee.setRole(role);
+
+
     }
 }

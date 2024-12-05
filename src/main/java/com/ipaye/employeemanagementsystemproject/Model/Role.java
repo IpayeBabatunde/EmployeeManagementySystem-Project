@@ -1,6 +1,7 @@
 package com.ipaye.employeemanagementsystemproject.Model;
 
 import javax.imageio.event.IIOReadProgressListener;
+import java.util.Objects;
 
 public class Role {
 
@@ -16,6 +17,11 @@ public class Role {
         if(object == null || getClass() != object.getClass()) return false;
         Role role = (Role) object;
         return roleName.equals(role.roleName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(roleName);
     }
 
 }
