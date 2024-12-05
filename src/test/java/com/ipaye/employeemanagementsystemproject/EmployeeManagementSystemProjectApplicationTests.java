@@ -1,17 +1,34 @@
 package com.ipaye.employeemanagementsystemproject;
 
 import com.ipaye.employeemanagementsystemproject.Model.*;
+import com.ipaye.employeemanagementsystemproject.Model.Employee;
+import com.ipaye.employeemanagementsystemproject.Model.Manager;
+import com.ipaye.employeemanagementsystemproject.service.*;
+import com.ipaye.employeemanagementsystemproject.Model.Admin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.nio.file.LinkOption;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.valueOf;
+import static org.springframework.http.RequestEntity.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 class EmployeeManagementSystemProjectApplicationTests {
 
     //TEST CASE 1
@@ -581,5 +598,422 @@ class EmployeeManagementSystemProjectApplicationTests {
     }
 
     // TEST CASE 38
+
+    @Test
+    void preventAddingDuplicateDepartment(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("hr");
+
+        // Add the first department
+       admin.addDepartment(hrDepartment);
+
+        // Try adding a duplicate department and expect an exception
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            admin.addDepartment(hrDepartment); // Trying to add the same department again
+        });
+
+        // Check the exception message
+        assertEquals("Department already exists", exception.getMessage());
+    }
+
+
+    // TEST CASE 39
+    @Test
+    void AddNewRole(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+
+        admin.addRole(executiveRole);
+
+        assertEquals(executiveRole, admin.getRoleByTitle("Executive"));
+
+    }
+
+
+    // TEST CASE 40
+    @Test
+    void preventAddingDuplicateRole(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+
+        admin.addRole(executiveRole);
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            admin.addRoles(new Role("Executive"));
+        });
+
+        assertEquals("Role already exists", exception.getMessage());
+
+    }
+
+
+    // TEST CASE 41
+    @Test
+    void UpdateDepartmentName(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("HR");
+
+        admin.addDepartments(hrDepartment);
+        admin.updateDepartment("HR");
+        assertEquals("HR", admin.getDepartmentByNames("HR").getName());
+    }
+
+    // TEST CASE 42
+    @Test
+    void updateRoleTitle(){
+        Admin admin = new Admin();
+        Role engineerRole = new Role("Engineer");
+
+        admin.addRole(engineerRole);
+        admin.updateRoleTitle("Senior Engineer");
+
+       assertEquals("Senior Engineer", admin.getRoleByTitle("Senior Engineer").getTitle());
+    }
+
+    // TEST CASE 43
+    @Test
+    void RemoveDepartment(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("HR");
+
+        admin.addDepartment(hrDepartment);
+        admin.removeDepartment(hrDepartment);
+
+        assertNull(admin.getDepartmentByName("HR"));
+
+
+    }
+
+    // TEST CASE 44
+    @Test
+    void RemoveRole(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+
+        admin.addRole(executiveRole);
+        admin.removeRoles(executiveRole);
+
+        assertNull(admin.getRoleByTitle("Executive"));
+    }
+
+
+    //TEST CASE 45
+    @Test
+    void PreventRemovingNonExistentDepartment(){
+        Admin admin = new Admin();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            admin.removeDepartments("NonExistentDepartment");
+        });
+
+        assertEquals("Department does not exist", exception.getMessage());
+
+    }
+
+    // TEST CASE 46
+    @Test
+    void PreventRemovingNonExistingRole(){
+        Admin admin = new Admin();
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            admin.removeRole("NonExistingRole");
+        });
+        assertEquals("Role does not exist", exception.getMessage());
+    }
+
+    // TEST CASE 47
+    @Test
+    void ListAllDepartment(){
+        Admin admin = new Admin();
+        Department hrDepartment = new Department("HR");
+        Department dataDepartment = new Department("DATA");
+
+        admin.addDepartments(hrDepartment);
+        admin.addDepartments(dataDepartment);
+
+        List<Department> departments = admin.getAllDepartment();
+
+        assertEquals(2, departments.size());
+        assertTrue(departments.contains(hrDepartment));
+        assertTrue(departments.contains(dataDepartment));
+    }
+
+    // TEST CASE 48
+    @Test
+    void getAllRoles(){
+        Admin admin = new Admin();
+        Role executiveRole = new Role("Executive");
+        Role directorRole = new Role("Director");
+
+        admin.addRole(executiveRole);
+        admin.addRole(directorRole);
+
+        List<Role> roles = admin.getAllRoles();
+
+        assertEquals(2, roles.size());
+        assertTrue(roles.contains(executiveRole));
+        assertTrue(roles.contains(directorRole));
+        
+    }
+
+     // TEST CASE 49
+    @Test
+    void ManagerCanAddAPerformanceReviewForAnEmployee(){
+        PerformanceReviewService reviewService =Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John Doe");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane Smith");
+        PerformanceReview review = new PerformanceReview(employee.getId(), manager.getId(), 4, 5, 3);
+
+        //Mocking the behavior of the service method
+        Mockito.when(reviewService.addPerformanceReview(manager.getId(), employee.getId(), review)).thenReturn("Performance review added successfully");
+
+
+        //Invoking the method and asserting the result
+        String result =(String) reviewService.addPerformanceReview(manager.getId(), employee.getId(), review);
+        assertEquals("Performance review added successfully", result);
+
+
+    }
+
+    // TEST CASE 50
+    @Test
+    void ManagerCannotAddAReviewForAnInvalidEmployee(){
+        PerformanceReviewService reviewService = Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John Doe");
+        int invalidEmployeeId = 999;
+        PerformanceReview review = new PerformanceReview(invalidEmployeeId, manager.getId(), 4, 5,3);
+
+        // Mocking the behavior when employee is not found
+        Mockito.when(reviewService.addPerformanceReview(manager.getId(), invalidEmployeeId, review))
+                .thenThrow(new EmployeeNotFoundException("Employee not found"));
+
+        // Exception testing
+        Exception exception = assertThrows(EmployeeNotFoundException.class, ()->{
+            reviewService.addPerformanceReview(manager.getId(), invalidEmployeeId, review);
+        });
+
+        assertEquals("Employee not found", exception.getMessage());
+    }
+
+
+    //  TEST CASE 51
+    @Test
+    void ManagerCannotSubmitAReviewWithInvalidMetricRating(){
+        PerformanceReviewService reviewService = Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John doe");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane smith");
+        PerformanceReview invalidReview = new PerformanceReview(employee.getId(), manager.getId(), 6, -1, 4);
+        //Mocking the behavior when invalid rating are provided
+        Mockito.when(reviewService.addPerformanceReview(manager.getId(), employee.getId(), invalidReview))
+                .thenThrow(new InvalidRatingException("Invalid Rating for performance metrics"));
+
+        // Exception testing
+        Exception exception = assertThrows(InvalidRatingException.class, () ->{
+            reviewService.addPerformanceReview(manager.getId(), employee.getId(), invalidReview);
+        });
+
+        assertEquals("Invalid Rating for performance metrics", exception.getMessage());
+    }
+
+    // TEST CASE 52
+    @Test
+    void RetrievePerformanceForAnEmployee(){
+        PerformanceReviewService reviewService =Mockito.mock(PerformanceReviewService.class);
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane smith");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "John Doe");
+
+        // Sample reviews for the employee
+        PerformanceReview review1 = new PerformanceReview(employee.getId(), manager.getId(), 5, 4, 5);
+        PerformanceReview review2 = new PerformanceReview(employee.getId(), manager.getId(), 4, 5, 5);
+
+        List<PerformanceReview> reviews = Arrays.asList(review1, review2);
+
+        //Mocking the retrieval of reviews
+        Mockito.when(reviewService.getPerformanceReviews(employee.getId())).thenReturn(reviews);
+
+        // verifying that the reviews are returned correctly
+        List<PerformanceReview> result = reviewService.getPerformanceReviews(employee.getId());
+        assertEquals(2, result.size());
+        assertEquals(0, result.get(0).getCommunication());
+
+    }
+
+
+    // TEST CASE 53
+    @Test
+    void InvalidMetricScoreTest(){
+        com.ipaye.employeemanagementsystemproject.service.Employee  employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "John Doe");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "Jane smith");
+
+        List<PerformanceMetrics> metrics = List.of(
+                new PerformanceMetrics("Communication", 6),
+                new PerformanceMetrics("Technical Expertise", 5),
+                new PerformanceMetrics("Team work", 3)
+        );
+
+            PerformanceReview review = new PerformanceReview(employee, manager, metrics, "Excellent Technical skills");
+
+            Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+                review.addPerformanceReview(review);
+            });
+
+            assertEquals("Performance Score Must be btwn 1 and 5 for metric comm", exception.getMessage());
+    }
+
+    // TEST CASE 54
+    @Test
+    void missingMetricTest(){
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "John doe");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "jane smith");
+
+        List<PerformanceMetrics> metrics = List.of(new PerformanceMetrics("Communication", 4));
+
+        PerformanceReview review = new PerformanceReview(employee, manager, metrics, "Needs improvement in some areas");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->{
+            review.addPerformanceReview(review);
+        });
+
+        assertEquals("All Performance metrics must be provided", exception.getMessage());
+    }
+
+
+
+    // TEST CASE 55
+    @Test
+    void EmptyReviewCommentTest(){
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "John Doe");
+        com.ipaye.employeemanagementsystemproject.service.Manager manager = new com.ipaye.employeemanagementsystemproject.service.Manager(1, "Jack Bauer");
+
+        List<PerformanceMetrics> metrics = List.of(
+                new PerformanceMetrics("Communication", 4),
+                new PerformanceMetrics("Technical Expertise", 5),
+                new PerformanceMetrics("Teamwork", 3)
+
+        );
+
+        PerformanceReview review = new PerformanceReview(employee, manager, metrics, "");
+
+        Exception exception = assertThrows(IllegalArgumentException.class, ()->{
+            review.addPerformanceReview(review);
+        });
+
+        assertEquals("Review comments cannot be empty", exception.getMessage());
+
+    }
+
+    //  TEST CASE 56
+    @Test
+    void AdminCanASalaryForAnEmployee(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Admin admin = new com.ipaye.employeemanagementsystemproject.service.Admin(1, "AdminUser");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jack Bauer");
+        double salary = 7000.0;
+
+        // mock the behavior of the setting salary
+        Mockito.when(salaryManagementService.setSalary(admin.getId(), employee.getId(), salary))
+                .thenReturn("Salary set successfully");
+
+        //  execute and assert
+        String result =(String) salaryManagementService.setSalary(admin.getId(), employee.getId(), salary);
+        assertEquals("Salary set successfully", result);
+
+    }
+
+
+    // TEST CASE 57
+    @Test
+    void AdminCanUpdateEmployeeSalary(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Admin admin = new com.ipaye.employeemanagementsystemproject.service.Admin(1, "AdminUser");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jack Doe");
+        double newSalary = 80000.0;
+
+        // Mock the behavior of the updating salary
+        Mockito.when(salaryManagementService.updateSalary(admin.getId(), employee.getId(), newSalary))
+                .thenReturn("Salary updated successfully");
+
+        // Execute and assert
+        String result =(String) salaryManagementService.updateSalary(admin.getId(), employee.getId(), newSalary);
+        assertEquals("Salary updated successfully", result);
+    }
+
+    // TEST CASE 58
+    @Test
+    void RetrieveSalaryHistoryForAnEmployee(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane Austin");
+
+        //Mock salary history
+        SalaryRecord salaryRecord1 = new SalaryRecord(1, 700000, "2023-01-01");
+        SalaryRecord salaryRecord2 = new SalaryRecord(1, 900000, "2024-01-08");
+        List<SalaryRecord> salaryHistory = Arrays.asList(salaryRecord1, salaryRecord2);
+
+        // Mocking the behavior to retrieve salary history
+        Mockito.when(salaryManagementService.getSalaryHistory(employee.getId())).thenReturn(salaryHistory);
+
+        // Execute and assert
+        List<SalaryRecord> result = salaryManagementService.getSalaryHistory(employee.getId());
+        assertEquals(2, result.size());
+        assertEquals(700000, result.get(0).getSalary());
+
+    }
+
+    // TEST CASE 59
+    @Test
+    void GenerateEmployeePerformanceReport(){
+
+        ReportingService reportingService = Mockito.mock(ReportingService.class);
+
+        //Mock report data
+        PerformanceReport performanceReport = new PerformanceReport(4.2, 3.7, 4.7);
+
+        //mock the behavior for generating the report
+        Mockito.when(reportingService.generateEmployeePerformanceReport()).thenReturn(performanceReport);
+
+
+        // Execute the method and assert the result
+        PerformanceReport result =(PerformanceReport) reportingService.generateEmployeePerformanceReport();
+        assertNotNull(result);
+        assertEquals(4.2, result.getAverageCommunication());
+        assertEquals(3.7, result.getAverageTeamwork());
+        assertEquals(4.7, result.getAverageProblemSolving());
+
+    }
+
+   //  TEST CASE 60
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void ValidPerformanceCreationRatingWithInvalidRating() throws Exception {
+
+        String invalidReviewJson = "{ \"employeeId\": 1, \"rating\": 4, \"reviewText\": \"\" }";
+        ResultActions reviewTextCannotBeEmpty;
+        reviewTextCannotBeEmpty=mockMvc.perform((RequestBuilder) post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(valueOf(invalidReviewJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.rating").value("Rating must be between 1 and 5"))
+                .andExpect(jsonPath("$.errors.reviewText").value("Review text cannot be empty"));
+    }
+
+
+    // TEST CASE 61
+
+    @Test
+    public void testInvalidSalaryCreation() throws Exception {
+        String invalidSalaryJson = "{ \"employeeId\": 1, \"salaryAmount\": -50000 }";
+
+        mockMvc.perform((RequestBuilder) post("/api/salaries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.valueOf(invalidSalaryJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.salaryAmount").value("Salary must be a positive value"));
+    }
+
+
+
+
 
 }
