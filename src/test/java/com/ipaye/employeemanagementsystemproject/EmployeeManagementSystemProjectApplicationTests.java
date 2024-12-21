@@ -1,22 +1,34 @@
 package com.ipaye.employeemanagementsystemproject;
 
 import com.ipaye.employeemanagementsystemproject.Model.*;
-import com.ipaye.employeemanagementsystemproject.service.EmployeeNotFoundException;
-import com.ipaye.employeemanagementsystemproject.service.InvalidRatingException;
-import com.ipaye.employeemanagementsystemproject.service.PerformanceMetrics;
-import com.ipaye.employeemanagementsystemproject.service.PerformanceReviewService;
+import com.ipaye.employeemanagementsystemproject.Model.Employee;
+import com.ipaye.employeemanagementsystemproject.Model.Manager;
+import com.ipaye.employeemanagementsystemproject.service.*;
+import com.ipaye.employeemanagementsystemproject.Model.Admin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.nio.file.LinkOption;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.valueOf;
+import static org.springframework.http.RequestEntity.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 class EmployeeManagementSystemProjectApplicationTests {
 
     //TEST CASE 1
@@ -888,6 +900,116 @@ class EmployeeManagementSystemProjectApplicationTests {
 
         assertEquals("Review comments cannot be empty", exception.getMessage());
 
+    }
+
+    //  TEST CASE 56
+    @Test
+    void AdminCanASalaryForAnEmployee(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Admin admin = new com.ipaye.employeemanagementsystemproject.service.Admin(1, "AdminUser");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jack Bauer");
+        double salary = 7000.0;
+
+        // mock the behavior of the setting salary
+        Mockito.when(salaryManagementService.setSalary(admin.getId(), employee.getId(), salary))
+                .thenReturn("Salary set successfully");
+
+        //  execute and assert
+        String result =(String) salaryManagementService.setSalary(admin.getId(), employee.getId(), salary);
+        assertEquals("Salary set successfully", result);
+
+    }
+
+
+    // TEST CASE 57
+    @Test
+    void AdminCanUpdateEmployeeSalary(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Admin admin = new com.ipaye.employeemanagementsystemproject.service.Admin(1, "AdminUser");
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jack Doe");
+        double newSalary = 80000.0;
+
+        // Mock the behavior of the updating salary
+        Mockito.when(salaryManagementService.updateSalary(admin.getId(), employee.getId(), newSalary))
+                .thenReturn("Salary updated successfully");
+
+        // Execute and assert
+        String result =(String) salaryManagementService.updateSalary(admin.getId(), employee.getId(), newSalary);
+        assertEquals("Salary updated successfully", result);
+    }
+
+    // TEST CASE 58
+    @Test
+    void RetrieveSalaryHistoryForAnEmployee(){
+        SalaryManagementService salaryManagementService = Mockito.mock(SalaryManagementService.class);
+        com.ipaye.employeemanagementsystemproject.service.Employee employee = new com.ipaye.employeemanagementsystemproject.service.Employee(1, "Jane Austin");
+
+        //Mock salary history
+        SalaryRecord salaryRecord1 = new SalaryRecord(1, 700000, "2023-01-01");
+        SalaryRecord salaryRecord2 = new SalaryRecord(1, 900000, "2024-01-08");
+        List<SalaryRecord> salaryHistory = Arrays.asList(salaryRecord1, salaryRecord2);
+
+        // Mocking the behavior to retrieve salary history
+        Mockito.when(salaryManagementService.getSalaryHistory(employee.getId())).thenReturn(salaryHistory);
+
+        // Execute and assert
+        List<SalaryRecord> result = salaryManagementService.getSalaryHistory(employee.getId());
+        assertEquals(2, result.size());
+        assertEquals(700000, result.get(0).getSalary());
+
+    }
+
+    // TEST CASE 59
+    @Test
+    void GenerateEmployeePerformanceReport(){
+
+        ReportingService reportingService = Mockito.mock(ReportingService.class);
+
+        //Mock report data
+        PerformanceReport performanceReport = new PerformanceReport(4.2, 3.7, 4.7);
+
+        //mock the behavior for generating the report
+        Mockito.when(reportingService.generateEmployeePerformanceReport()).thenReturn(performanceReport);
+
+
+        // Execute the method and assert the result
+        PerformanceReport result =(PerformanceReport) reportingService.generateEmployeePerformanceReport();
+        assertNotNull(result);
+        assertEquals(4.2, result.getAverageCommunication());
+        assertEquals(3.7, result.getAverageTeamwork());
+        assertEquals(4.7, result.getAverageProblemSolving());
+
+    }
+
+   //  TEST CASE 60
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void ValidPerformanceCreationRatingWithInvalidRating() throws Exception {
+
+        String invalidReviewJson = "{ \"employeeId\": 1, \"rating\": 4, \"reviewText\": \"\" }";
+        ResultActions reviewTextCannotBeEmpty;
+        reviewTextCannotBeEmpty=mockMvc.perform((RequestBuilder) post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(valueOf(invalidReviewJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.rating").value("Rating must be between 1 and 5"))
+                .andExpect(jsonPath("$.errors.reviewText").value("Review text cannot be empty"));
+    }
+
+
+    // TEST CASE 61
+
+    @Test
+    public void testInvalidSalaryCreation() throws Exception {
+        String invalidSalaryJson = "{ \"employeeId\": 1, \"salaryAmount\": -50000 }";
+
+        mockMvc.perform((RequestBuilder) post("/api/salaries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.valueOf(invalidSalaryJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.salaryAmount").value("Salary must be a positive value"));
     }
 
 
