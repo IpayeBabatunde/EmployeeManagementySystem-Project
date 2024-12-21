@@ -8,15 +8,27 @@ import com.ipaye.employeemanagementsystemproject.Model.Admin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.nio.file.LinkOption;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.http.MediaType.valueOf;
+import static org.springframework.http.RequestEntity.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 class EmployeeManagementSystemProjectApplicationTests {
 
     //TEST CASE 1
@@ -946,6 +958,61 @@ class EmployeeManagementSystemProjectApplicationTests {
         assertEquals(700000, result.get(0).getSalary());
 
     }
+
+    // TEST CASE 59
+    @Test
+    void GenerateEmployeePerformanceReport(){
+
+        ReportingService reportingService = Mockito.mock(ReportingService.class);
+
+        //Mock report data
+        PerformanceReport performanceReport = new PerformanceReport(4.2, 3.7, 4.7);
+
+        //mock the behavior for generating the report
+        Mockito.when(reportingService.generateEmployeePerformanceReport()).thenReturn(performanceReport);
+
+
+        // Execute the method and assert the result
+        PerformanceReport result =(PerformanceReport) reportingService.generateEmployeePerformanceReport();
+        assertNotNull(result);
+        assertEquals(4.2, result.getAverageCommunication());
+        assertEquals(3.7, result.getAverageTeamwork());
+        assertEquals(4.7, result.getAverageProblemSolving());
+
+    }
+
+   //  TEST CASE 60
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void ValidPerformanceCreationRatingWithInvalidRating() throws Exception {
+
+        String invalidReviewJson = "{ \"employeeId\": 1, \"rating\": 4, \"reviewText\": \"\" }";
+        ResultActions reviewTextCannotBeEmpty;
+        reviewTextCannotBeEmpty=mockMvc.perform((RequestBuilder) post("/api/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(valueOf(invalidReviewJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.rating").value("Rating must be between 1 and 5"))
+                .andExpect(jsonPath("$.errors.reviewText").value("Review text cannot be empty"));
+    }
+
+
+    // TEST CASE 61
+
+    @Test
+    public void testInvalidSalaryCreation() throws Exception {
+        String invalidSalaryJson = "{ \"employeeId\": 1, \"salaryAmount\": -50000 }";
+
+        mockMvc.perform((RequestBuilder) post("/api/salaries")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.valueOf(invalidSalaryJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.salaryAmount").value("Salary must be a positive value"));
+    }
+
+
 
 
 
